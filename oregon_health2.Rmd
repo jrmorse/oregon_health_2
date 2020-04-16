@@ -9,3 +9,18 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r, include = FALSE}
+library(readxl)
+library(janitor)
+library(tidyverse)
+library(gt)
+library(infer)
+library(psych)
+library(skimr)
+```
+
+```{r data2, include=FALSE}
+data <- read_csv("data_2/ohie_assignment2.csv") %>% 
+  clean_names()
+data
+```
