@@ -19,6 +19,7 @@ library(psych)
 library(skimr)
 library(broom)
 library(sandwich)
+library(lmtest)
 ```
 
 ```{r data2, include=FALSE}
@@ -96,13 +97,9 @@ summary(model)
 
 # This saves the heteroscedastic robust standard error
 
-vcv <- model %>% 
-  vcovHC() %>% 
-  diag() %>% 
-  sqrt()
-
-vcv
- 
+robust <- 
+  coeftest(model, vcov = vcovHC(model, "HC1"))
+robust
 ```
 
 
@@ -118,7 +115,15 @@ Method Two: The estimated coefficient on medicaid is **0.04352945**. I'm not sur
 
 
 ```{r question4, include = FALSE}
-model_genderage <- lm(ed_visits ~ medicaid + female + age_35_49_inp + age_50_64_inp, data = data)
+# option one
+model_genderage1 <- lm(ed_visits ~ medicaid + female + age_35_49_inp + age_50_64_inp, data = data)
+
+summary(model_genderage1)
+
+# option two
+gender_age_controls<- data$female + data$age_35_49_inp + data$age_50_64_inp
+model_genderage <- lm(ed_visits ~ medicaid + gender_age_controls, data = data)
+
 summary(model_genderage)
 ```
 
@@ -127,12 +132,19 @@ summary(model_genderage)
 
 
 *Answer*
-My estimated coefficient on “medicaid” is **.45787**. This is a **smaller** coefficient than what I obtained in the previous question.
+My estimated coefficient on “medicaid” is **.45787** OR **0.47720**. This is a **smaller** coefficient than what I obtained in the previous question.
 
 ```{r 5, include = FALSE}
-model_diagnosiscontrol <- lm(ed_visits ~ medicaid + female + age_35_49_inp + age_50_64_inp + ast_dx_pre_lottery + dia_dx_pre_lottery + hbp_dx_pre_lottery + chl_dx_pre_lottery + ami_dx_pre_lottery + chf_dx_pre_lottery + emp_dx_pre_lottery + kid_dx_pre_lottery + cancer_dx_pre_lottery + dep_dx_pre_lottery, data = data)
+# Option one
+model_diagnosiscontrol1 <- lm(ed_visits ~ medicaid + female + age_35_49_inp + age_50_64_inp + ast_dx_pre_lottery + dia_dx_pre_lottery + hbp_dx_pre_lottery + chl_dx_pre_lottery + ami_dx_pre_lottery + chf_dx_pre_lottery + emp_dx_pre_lottery + kid_dx_pre_lottery + cancer_dx_pre_lottery + dep_dx_pre_lottery, data = data)
 
-model_diagnosiscontrol
+summary(model_diagnosiscontrol1)
+
+# Option two
+diagnosis_controls <- data$ast_dx_pre_lottery + data$dia_dx_pre_lottery + data$hbp_dx_pre_lottery + data$chl_dx_pre_lottery + data$ami_dx_pre_lottery + data$chf_dx_pre_lottery + data$emp_dx_pre_lottery + data$kid_dx_pre_lottery + data$cancer_dx_pre_lottery + data$dep_dx_pre_lottery
+
+model_diagnosiscontrol <- lm(ed_visits ~ gender_age_controls + diagnosis_controls, data = data)
+summary(model_diagnosiscontrol)
 ```
 
 
@@ -140,5 +152,28 @@ model_diagnosiscontrol
 
 
 *Answer*
+**Not sure if this right. Are we supposed to get rid of the gender-age controls? **
+My estimated coefficient on medicaid is: **0.41378**. This value is smaller than my original coefficient. There might be a change on the medicaid coefficient as I include additional covariates because in the first equation I am ignoring the covariates whereas in this equation I am *controlling* for them. When we control for covariates our estimate differs as we are holding these covariates constant which should increase the accuracy of our model.
 
-My estimated coefficient on medicaid is: **0.4138**. This value is smaller than my original coefficient. There might be a change on the medicaid coefficient as I include additional covariates because in the first equation I am ignoring the covariates whereas in this equation I am *controlling* for them. When we control for covariates our estimate differs as we are holding these covariates constant which should increase the accuracy of our model.
+
+```{r question6}
+# Here I have called every variable individually rather than doing it by calling the individual variables.
+
+logit_model1 <- glm(medicaid ~ female + age_35_49_inp + age_50_64_inp + ast_dx_pre_lottery + dia_dx_pre_lottery + hbp_dx_pre_lottery + chl_dx_pre_lottery + ami_dx_pre_lottery + chf_dx_pre_lottery + emp_dx_pre_lottery + kid_dx_pre_lottery + cancer_dx_pre_lottery + dep_dx_pre_lottery, family = binomial, data = data)
+
+# Here I have taken the approach of calling aggregrate variables.
+
+logit_model <- glm(medicaid ~ gender_age_controls + diagnosis_controls, family = binomial, data = data)
+summary(logit_model)
+```
+
+```{r}
+# No idea whats happening here
+logit_model %>% 
+  predict(mean)
+```
+
+```{r}
+# create a density plot
+```
+
