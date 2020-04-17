@@ -17,6 +17,7 @@ library(gt)
 library(infer)
 library(psych)
 library(skimr)
+library(broom)
 ```
 
 ```{r data2, include=FALSE}
@@ -24,3 +25,63 @@ data <- read_csv("data_2/ohie_assignment2.csv") %>%
   clean_names()
 data
 ```
+
+```{r question1, include = FALSE}
+
+mean <- describe(data$ed_visits) %>% 
+  select(mean)
+
+sd <- describe(data$ed_visits) %>% 
+  select(sd)
+
+median <- describe(data$ed_visits) %>% 
+  select(median)
+
+perc_90 <- data %>% 
+  pull(ed_visits) %>% 
+  quantile(.90, na.rm = TRUE)
+
+perc_99 <- data %>% 
+  pull(ed_visits) %>% 
+  quantile(.99, na.rm = TRUE)
+```
+
+
+1 *Question:* The main outcome, or dependent variable, of interest will be “ed_visits”, which is the self-reported number of Emergency Department visits during the previous 12 months. You can use the “summarize” command, along with the “detail” option, to display summary statistics for a variable. Report each of the following statistics for “ed_visits”: mean, standard deviation, median, 90th percentile, 99th percentile.
+
+
+*Answer:*
+
+Mean: **`r mean`**
+
+
+Standard Deviation: **`r sd`**
+
+
+Median: **`r median`**
+
+
+90th Percentile: **`r perc_90`**
+
+
+99th Percentile: **`r perc_99`**
+
+
+```{r medicaid, include = FALSE}
+
+mean <- describe(data$medicaid) %>% 
+  select(mean)
+
+sd <- describe(data$medicaid) %>% 
+  select(sd)
+```
+
+
+2 *Question:* The main regressor, or independent variable, of interest will be “medicaid”, which is an indicator for whether a person was enrolled in Medicaid at the time of the survey. Note that this Medicaid enrollment indicator is not randomized. For “medicaid”, report the mean and standard deviation.
+
+*Answer:*
+
+Mean: **`r mean`**
+
+
+Standard Deviation: **`r sd`**
