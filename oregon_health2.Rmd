@@ -18,6 +18,7 @@ library(infer)
 library(psych)
 library(skimr)
 library(broom)
+library(sandwich)
 ```
 
 ```{r data2, include=FALSE}
@@ -26,7 +27,7 @@ data <- read_csv("data_2/ohie_assignment2.csv") %>%
 data
 ```
 
-```{r question1, include = FALSE}
+```{r ed_visits, include = FALSE}
 
 mean <- describe(data$ed_visits) %>% 
   select(mean)
@@ -47,7 +48,7 @@ perc_99 <- data %>%
 ```
 
 
-1 *Question:* The main outcome, or dependent variable, of interest will be “ed_visits”, which is the self-reported number of Emergency Department visits during the previous 12 months. You can use the “summarize” command, along with the “detail” option, to display summary statistics for a variable. Report each of the following statistics for “ed_visits”: mean, standard deviation, median, 90th percentile, 99th percentile.
+**1 Question:** The main outcome, or dependent variable, of interest will be “ed_visits”, which is the self-reported number of Emergency Department visits during the previous 12 months. You can use the “summarize” command, along with the “detail” option, to display summary statistics for a variable. Report each of the following statistics for “ed_visits”: mean, standard deviation, median, 90th percentile, 99th percentile.
 
 
 *Answer:*
@@ -77,7 +78,7 @@ sd <- describe(data$medicaid) %>%
 ```
 
 
-2 *Question:* The main regressor, or independent variable, of interest will be “medicaid”, which is an indicator for whether a person was enrolled in Medicaid at the time of the survey. Note that this Medicaid enrollment indicator is not randomized. For “medicaid”, report the mean and standard deviation.
+**2 Question:** The main regressor, or independent variable, of interest will be “medicaid”, which is an indicator for whether a person was enrolled in Medicaid at the time of the survey. Note that this Medicaid enrollment indicator is not randomized. For “medicaid”, report the mean and standard deviation.
 
 *Answer:*
 
@@ -85,3 +86,59 @@ Mean: **`r mean`**
 
 
 Standard Deviation: **`r sd`**
+
+
+```{r question3, include = FALSE}
+# this is the form I am more comfortable with. I am unsure if the it takes into account the needed heteroscedastic robust standard error that is required. 
+
+model <- lm(ed_visits ~ medicaid, data = data)
+summary(model)
+
+# This saves the heteroscedastic robust standard error
+
+vcv <- model %>% 
+  vcovHC() %>% 
+  diag() %>% 
+  sqrt()
+
+vcv
+ 
+```
+
+
+**3 Question:** The “regress” command can be used to estimate a linear regression (OLS). Robust standard errors allow for the possibility of heteroskedasticity, which is when the variance of the dependent variable may differ across values of the independent variables. In each of the following linear regressions, use the “, robust” option in order to incorporate robust standard errors. Thus, the basic syntax for these commands is “regress ed_visits medicaid, robust”. Estimate a linear regression where “ed_visits” is the dependent variable, “medicaid” is the independent variable, and there are no other covariates. What is your estimated coefficient on “medicaid”? Is it statistically significant at the 5% level? How do you interpret your estimated coefficient?
+
+
+*Answer*
+
+Method One: The estimated coefficient on medicaid is **0.48100**. The p-value is very low at **<2e-16**; this means that this is statstically significant. I interpret my estimated coefficient as referring to the relationship between my two variables of interest; specifically it is the slope of medicaid is .48100. In other words, with every one increase of medicaid, there should be an associated increase of, on average, .48100 units of ed visits.
+
+Method Two: The estimated coefficient on medicaid is **0.04352945**. I'm not sure how to find out if this is significant at the 5% level. I would estimate this efficient as 
+
+
+
+```{r question4, include = FALSE}
+model_genderage <- lm(ed_visits ~ medicaid + female + age_35_49_inp + age_50_64_inp, data = data)
+summary(model_genderage)
+```
+
+
+**4 Question:** Estimate a linear regression as in the previous question, but include the following covariates as well: “female”, “age_35_49_inp”, “age_50_64_inp”. We’ll refer to these variables as “gender-age controls” later in the assignment. What is your estimated coefficient on “medicaid”? Is it smaller or larger compared to what you obtained in the previous question?
+
+
+*Answer*
+My estimated coefficient on “medicaid” is **.45787**. This is a **smaller** coefficient than what I obtained in the previous question.
+
+```{r 5, include = FALSE}
+model_diagnosiscontrol <- lm(ed_visits ~ medicaid + female + age_35_49_inp + age_50_64_inp + ast_dx_pre_lottery + dia_dx_pre_lottery + hbp_dx_pre_lottery + chl_dx_pre_lottery + ami_dx_pre_lottery + chf_dx_pre_lottery + emp_dx_pre_lottery + kid_dx_pre_lottery + cancer_dx_pre_lottery + dep_dx_pre_lottery, data = data)
+
+model_diagnosiscontrol
+```
+
+
+**5 Question:**	Estimate a linear regression as in the previous question, but now add the following covariates as well: “ast_dx_pre_lottery”, “dia_dx_pre_lottery”, “hbp_dx_pre_lottery”, “chl_dx_pre_lottery”, “ami_dx_pre_lottery”, “chf_dx_pre_lottery”, “emp_dx_pre_lottery”, “kid_dx_pre_lottery”, “cancer_dx_pre_lottery”, “dep_dx_pre_lottery”. We’ll refer to these variables as “diagnosis controls” later in the assignment. Note that these variables are indicators for various health diagnoses prior to Medicaid enrollment. What is your estimated coefficient on “medicaid”? How does this compare to what you obtained in your original linear regression from question 3, when there were no additional covariates? Why might there be a change in the “medicaid” coefficient when you include additional covariates?
+
+
+*Answer*
+
+My estimated coefficient on medicaid is: **0.4138**. This value is smaller than my original coefficient. There might be a change on the medicaid coefficient as I include additional covariates because in the first equation I am ignoring the covariates whereas in this equation I am *controlling* for them. When we control for covariates our estimate differs as we are holding these covariates constant which should increase the accuracy of our model.
