@@ -90,12 +90,11 @@ Standard Deviation: **`r sd`**
 
 
 ```{r question3, include = FALSE}
-# this is the form I am more comfortable with. I am unsure if the it takes into account the needed heteroscedastic robust standard error that is required. 
 
 model <- lm(ed_visits ~ medicaid, data = data)
 summary(model)
 
-# This saves the heteroscedastic robust standard error
+# This takes what I have done and saves the heteroscedastic robust standard error
 
 robust <- 
   coeftest(model, vcov = vcovHC(model, "HC1"))
@@ -110,8 +109,6 @@ robust
 
 Method One: The estimated coefficient on medicaid is **0.48100**. The p-value is very low at **<2e-16**; this means that this is statstically significant. I interpret my estimated coefficient as referring to the relationship between my two variables of interest; specifically it is the slope of medicaid is .48100. In other words, with every one increase of medicaid, there should be an associated increase of, on average, .48100 units of ed visits.
 
-Method Two: The estimated coefficient on medicaid is **0.04352945**. I'm not sure how to find out if this is significant at the 5% level. I would estimate this efficient as 
-
 
 
 ```{r question4, include = FALSE}
@@ -120,7 +117,7 @@ model_genderage1 <- lm(ed_visits ~ medicaid + female + age_35_49_inp + age_50_64
 
 summary(model_genderage1)
 
-# option two
+# option two NOT RIGHT
 gender_age_controls<- data$female + data$age_35_49_inp + data$age_50_64_inp
 model_genderage <- lm(ed_visits ~ medicaid + gender_age_controls, data = data)
 
@@ -132,7 +129,7 @@ summary(model_genderage)
 
 
 *Answer*
-My estimated coefficient on “medicaid” is **.45787** OR **0.47720**. This is a **smaller** coefficient than what I obtained in the previous question.
+My estimated coefficient on “medicaid” is **.45787**. This is a **smaller** coefficient than what I obtained in the previous question.
 
 ```{r 5, include = FALSE}
 # Option one
@@ -140,7 +137,7 @@ model_diagnosiscontrol1 <- lm(ed_visits ~ medicaid + female + age_35_49_inp + ag
 
 summary(model_diagnosiscontrol1)
 
-# Option two
+# Option two WRONG
 diagnosis_controls <- data$ast_dx_pre_lottery + data$dia_dx_pre_lottery + data$hbp_dx_pre_lottery + data$chl_dx_pre_lottery + data$ami_dx_pre_lottery + data$chf_dx_pre_lottery + data$emp_dx_pre_lottery + data$kid_dx_pre_lottery + data$cancer_dx_pre_lottery + data$dep_dx_pre_lottery
 
 model_diagnosiscontrol <- lm(ed_visits ~ gender_age_controls + diagnosis_controls, data = data)
@@ -151,7 +148,8 @@ summary(model_diagnosiscontrol)
 **5 Question:**	Estimate a linear regression as in the previous question, but now add the following covariates as well: “ast_dx_pre_lottery”, “dia_dx_pre_lottery”, “hbp_dx_pre_lottery”, “chl_dx_pre_lottery”, “ami_dx_pre_lottery”, “chf_dx_pre_lottery”, “emp_dx_pre_lottery”, “kid_dx_pre_lottery”, “cancer_dx_pre_lottery”, “dep_dx_pre_lottery”. We’ll refer to these variables as “diagnosis controls” later in the assignment. Note that these variables are indicators for various health diagnoses prior to Medicaid enrollment. What is your estimated coefficient on “medicaid”? How does this compare to what you obtained in your original linear regression from question 3, when there were no additional covariates? Why might there be a change in the “medicaid” coefficient when you include additional covariates?
 
 
-*Answer*
+*Answer:*
+
 **Not sure if this right. Are we supposed to get rid of the gender-age controls? **
 My estimated coefficient on medicaid is: **0.41378**. This value is smaller than my original coefficient. There might be a change on the medicaid coefficient as I include additional covariates because in the first equation I am ignoring the covariates whereas in this equation I am *controlling* for them. When we control for covariates our estimate differs as we are holding these covariates constant which should increase the accuracy of our model.
 
@@ -159,21 +157,80 @@ My estimated coefficient on medicaid is: **0.41378**. This value is smaller than
 ```{r question6}
 # Here I have called every variable individually rather than doing it by calling the individual variables.
 
+na_removed <- data %>% 
+  filter(ed_visits != NA)
+
 logit_model1 <- glm(medicaid ~ female + age_35_49_inp + age_50_64_inp + ast_dx_pre_lottery + dia_dx_pre_lottery + hbp_dx_pre_lottery + chl_dx_pre_lottery + ami_dx_pre_lottery + chf_dx_pre_lottery + emp_dx_pre_lottery + kid_dx_pre_lottery + cancer_dx_pre_lottery + dep_dx_pre_lottery, family = binomial, data = data)
 
-# Here I have taken the approach of calling aggregrate variables.
 
-logit_model <- glm(medicaid ~ gender_age_controls + diagnosis_controls, family = binomial, data = data)
-summary(logit_model)
 ```
+
+```{r question7}
+# Here I run the prediction on the model I created in question 6
+
+mylogit <- predict(logit_model1, newdata = data, type = "response")
+
+# No I am saving this table so that I can pull my desired values (mean and standard deviation) 
+
+test <- summary(mylogit)
+test
+
+mean <- test[[4]]
+sd <- sd(test)
+
+```
+
+**7.Question:**	Using the “predict” command immediately following the “logit” command allows one to generate a variable with the predicted values implied by the estimates from the “logit” command. Use the “predict” command to generate “medicaid_hat”, the predicted probabilities of Medicaid enrollment based on the covariates used in the logistic regression. What is the mean and standard deviation of “medicaid_hat”?
+
+
+*Answer:*
+
+The mean of medicaid_hat is **`r mean`** and the standard deviation is **`r sd`**.
+
+
+```{r question8}
+# Here I have created a density plot
+
+
+ggplot(data, aes(x = mylogit, fill = as.factor(medicaid))) +
+  geom_density(alpha = 0.3) +
+  labs(title = "Distributions of Propensity Scores for Medicaid and Non-Medicaid Individuals",
+       subtitle = "Value of 1 signifies Medicaid Enrollee",
+       x = "Propensity scores",
+       y = "Density",
+       fill = "Medicaid") + 
+  theme_classic()
+
+```
+
+**8.Question:** Note that “medicaid_hat” is in fact a propensity score. Examine the “common support” assumption underlying PSM by plotting the distributions of propensity scores for Medicaid participants and nonparticipants.
+
+	Include your density plot in your write-up. What is the range of propensity scores for nonparticipants? What is the range of propensity scores for participants? Does the “common support” assumption appear to be valid?
+
+
+*Answer:*
+
+The range of propensity scores appears to be *0.2 to just over 0.6*. The common support assumption does appear to be valid as the distribution of density appears to be relatively similar for both groups with deviation minimized.
+
+
+**9.Question:** The command “teffects psmatch” can be used, with the “, atet” option, to estimate a TOT effect using PSM. Note that by default the command will estimate an ATE, which is slightly different, so be sure to specify the “, atet” option to obtain TOT estimates. Use this command to obtain an estimate of the effect of Medicaid enrollment on ED visits, using the same covariates that were used to generate propensity scores (“gender-age controls” and “diagnosis controls”). Use nearest-neighbor matching with 1 match. Note this will require using the Stata help file for the appropriate syntax. What is your PSM estimate of the TOT effect? Is it statistically significant at the 5% level?
+
 
 ```{r}
-# No idea whats happening here
-logit_model %>% 
-  predict(mean)
+library(MatchIt)
+
+# Here I had to remove the na values in order to run my match it function below
+
+x <- data %>% 
+  na.omit(TRUE)
+
+neighbor <- matchit(medicaid ~ female + age_35_49_inp + age_50_64_inp + ast_dx_pre_lottery + dia_dx_pre_lottery + hbp_dx_pre_lottery + chl_dx_pre_lottery + ami_dx_pre_lottery + chf_dx_pre_lottery + emp_dx_pre_lottery + kid_dx_pre_lottery + cancer_dx_pre_lottery + dep_dx_pre_lottery, family = binomial, data = x, method = "nearest", ratio = 1)
+neighbor
+
+summary <- summary(neighbor)
+summary
+
+
 ```
 
-```{r}
-# create a density plot
-```
 
